@@ -66,12 +66,19 @@ export default function AdminDashboard() {
             <h1 className="text-4xl font-bold">Admin Dashboard</h1>
             <p className="text-muted-foreground mt-2">Monitor and manage civic issues</p>
           </div>
-          <Link to="/admin/reports">
-            <Button size="lg">
-              Manage Reports
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
+          <div className="flex gap-3">
+            <Link to="/admin/users">
+              <Button size="lg" variant="outline">
+                Manage Users
+              </Button>
+            </Link>
+            <Link to="/admin/reports">
+              <Button size="lg">
+                Manage Reports
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats Cards */}

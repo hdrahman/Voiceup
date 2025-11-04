@@ -12,6 +12,7 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminReports from './pages/admin/Reports'
+import AdminUsers from './pages/admin/Users'
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) {
   const { isAuthenticated, isAdmin } = useAuth()
@@ -55,6 +56,14 @@ function App() {
                 element={
                   <ProtectedRoute adminOnly>
                     <AdminReports />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="admin/users"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <AdminUsers />
                   </ProtectedRoute>
                 }
               />

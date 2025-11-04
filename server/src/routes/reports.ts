@@ -3,7 +3,9 @@ import { PrismaClient } from '@prisma/client'
 import {
   CreateReportRequest,
   UpdateReportStatusRequest,
+  UpdateReportRequest,
   CreateCommentRequest,
+  BulkReportActionRequest,
   ReportFilters,
   Category,
   Status,
@@ -57,8 +59,13 @@ router.post('/create', optionalAuth, async (req: AuthRequest, res) => {
 // Get all reports with filters
 router.get('/', optionalAuth, async (req: AuthRequest, res) => {
   try {
-    const { category, status, search, sortBy, lat, lng } = req.query as any
+    const { category, status, search, sortBy, lat, lng, includeArchived } = req.query as any
     const filters: any = {}
+
+    // Exclude archived reports by default (unless admin specifically includes them)
+    if (includeArchived !== 'true') {
+      filters.isArchived = false
+    }
 
     if (category) filters.category = category as Category
     if (status) filters.status = status as Status
@@ -101,8 +108,8 @@ router.get('/', optionalAuth, async (req: AuthRequest, res) => {
         },
         upvoteUsers: req.userId
           ? {
-              where: { userId: req.userId },
-            }
+            where: { userId: req.userId },
+          }
           : false,
       },
     })
@@ -150,8 +157,8 @@ router.get('/:id', optionalAuth, async (req: AuthRequest, res) => {
         },
         upvoteUsers: req.userId
           ? {
-              where: { userId: req.userId },
-            }
+            where: { userId: req.userId },
+          }
           : false,
       },
     })
@@ -278,6 +285,145 @@ router.put('/:id/status', authenticate, requireAdmin, async (req: AuthRequest, r
   } catch (error) {
     console.error('Update status error:', error)
     res.status(500).json({ error: 'Failed to update status' })
+  }
+})
+
+// Update report (admin only)
+router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { title, description, category, status } = req.body as UpdateReportRequest
+
+    const updateData: any = {}
+    if (title) updateData.title = title
+    if (description) updateData.description = description
+    if (category && Object.values(Category).includes(category)) {
+      updateData.category = category
+    }
+    if (status && Object.values(Status).includes(status)) {
+      updateData.status = status
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' })
+    }
+
+    const report = await prisma.report.update({
+      where: { id: req.params.id },
+      data: updateData,
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            createdAt: true,
+          },
+        },
+        comments: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                role: true,
+                createdAt: true,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    res.json(report)
+  } catch (error) {
+    console.error('Update report error:', error)
+    res.status(500).json({ error: 'Failed to update report' })
+  }
+})
+
+// Delete report (admin only)
+router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    await prisma.report.delete({
+      where: { id: req.params.id },
+    })
+
+    res.json({ success: true })
+  } catch (error) {
+    console.error('Delete report error:', error)
+    res.status(500).json({ error: 'Failed to delete report' })
+  }
+})
+
+// Archive/unarchive report (admin only)
+router.put('/:id/archive', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { isArchived } = req.body
+
+    if (typeof isArchived !== 'boolean') {
+      return res.status(400).json({ error: 'Invalid archive status' })
+    }
+
+    const report = await prisma.report.update({
+      where: { id: req.params.id },
+      data: { isArchived },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            createdAt: true,
+          },
+        },
+      },
+    })
+
+    res.json(report)
+  } catch (error) {
+    console.error('Archive report error:', error)
+    res.status(500).json({ error: 'Failed to archive report' })
+  }
+})
+
+// Bulk actions on reports (admin only)
+router.post('/bulk-action', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { reportIds, action } = req.body as BulkReportActionRequest
+
+    if (!reportIds || !Array.isArray(reportIds) || reportIds.length === 0) {
+      return res.status(400).json({ error: 'Invalid report IDs' })
+    }
+
+    if (!action || !['delete', 'archive', 'unarchive'].includes(action)) {
+      return res.status(400).json({ error: 'Invalid action' })
+    }
+
+    let result
+    switch (action) {
+      case 'delete':
+        result = await prisma.report.deleteMany({
+          where: { id: { in: reportIds } },
+        })
+        break
+      case 'archive':
+        result = await prisma.report.updateMany({
+          where: { id: { in: reportIds } },
+          data: { isArchived: true },
+        })
+        break
+      case 'unarchive':
+        result = await prisma.report.updateMany({
+          where: { id: { in: reportIds } },
+          data: { isArchived: false },
+        })
+        break
+    }
+
+    res.json({ success: true, count: result.count })
+  } catch (error) {
+    console.error('Bulk action error:', error)
+    res.status(500).json({ error: 'Failed to perform bulk action' })
   }
 })
 

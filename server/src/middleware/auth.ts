@@ -1,13 +1,16 @@
 import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
+import { PrismaClient } from '@prisma/client'
 import { Role } from '@shared/types'
+
+const prisma = new PrismaClient()
 
 export interface AuthRequest extends Request {
   userId?: string
   userRole?: Role
 }
 
-export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '')
 
@@ -16,6 +19,17 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string; role: Role }
+
+    // Check if user is banned
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { isBanned: true },
+    })
+
+    if (user?.isBanned) {
+      return res.status(403).json({ error: 'Account has been banned' })
+    }
+
     req.userId = decoded.userId
     req.userRole = decoded.role
 

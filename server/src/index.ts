@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 import authRoutes from './routes/auth.js'
 import reportRoutes from './routes/reports.js'
 import statsRoutes from './routes/stats.js'
+import userRoutes from './routes/users.js'
 
 dotenv.config()
 
@@ -19,6 +20,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }))
 app.use('/api/auth', authRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/stats', statsRoutes)
+app.use('/api/users', userRoutes)
 
 // Health check
 app.get('/api/health', (req, res) => {

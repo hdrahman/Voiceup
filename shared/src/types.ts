@@ -23,6 +23,7 @@ export interface User {
   id: string
   email: string
   role: Role
+  isBanned?: boolean
   createdAt: Date | string
 }
 
@@ -39,6 +40,7 @@ export interface Report {
   audioData?: string
   upvotes: number
   anonymous: boolean
+  isArchived?: boolean
   createdAt: Date | string
   updatedAt: Date | string
   userId?: string
@@ -98,6 +100,26 @@ export interface UpdateReportStatusRequest {
 
 export interface CreateCommentRequest {
   text: string
+}
+
+export interface UpdateReportRequest {
+  title?: string
+  description?: string
+  category?: Category
+  status?: Status
+}
+
+export interface BulkReportActionRequest {
+  reportIds: string[]
+  action: 'delete' | 'archive' | 'unarchive'
+}
+
+export interface UpdateUserRoleRequest {
+  role: Role
+}
+
+export interface UpdateUserBanRequest {
+  isBanned: boolean
 }
 
 export interface ReportFilters {
