@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"C:\\Users\\Haame\\OneDrive\\Documents\\CS\\Voiceup\" /s)",
+      "Bash(node --version)",
+      "Bash(npm:*)",
+      "Bash(npx prisma db push:*)",
+      "Bash(timeout:*)",
+      "Bash(nul)",
+      "Bash(curl:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

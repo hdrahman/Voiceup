@@ -1,0 +1,69 @@
+// Prisma Schema for VoiceUp
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  password  String
+  role      String    @default("CITIZEN")
+  createdAt DateTime  @default(now())
+
+  reports   Report[]
+  comments  Comment[]
+  upvotes   Upvote[]
+}
+
+model Report {
+  id          String       @id @default(cuid())
+  title       String
+  description String
+  category    String
+  status      String       @default("NEW")
+  lat         Float
+  lng         Float
+  address     String
+  imageData   String?      // Base64 encoded image
+  audioData   String?      // Base64 encoded audio
+  upvotes     Int          @default(0)
+  anonymous   Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  userId      String?
+  user        User?        @relation(fields: [userId], references: [id])
+  comments    Comment[]
+  upvoteUsers Upvote[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  text      String
+  createdAt DateTime @default(now())
+
+  reportId  String
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Upvote {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  reportId  String
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([reportId, userId])
+}
